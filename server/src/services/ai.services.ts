@@ -1,5 +1,4 @@
 import redis from "../config/redis";
-import { getDocument } from "pdfjs-dist";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const AI_MODEL = "gemini-pro";
@@ -14,10 +13,7 @@ export const extractTextFromPDF = async (fileKey: string) => {
     }
 
     let fileBuffer: Uint8Array;
-    if (Buffer.isBuffer(fileData)) {
-      fileBuffer = new Uint8Array(fileData);
-    } else if (typeof fileData === "object" && fileData !== null) {
-      // check if the the object has the expected structure
+    if (typeof fileData === "object" && fileData !== null) {
       const bufferData = fileData as { type?: string; data?: number[] };
       if (bufferData.type === "Buffer" && Array.isArray(bufferData.data)) {
         fileBuffer = new Uint8Array(bufferData.data);
@@ -28,7 +24,10 @@ export const extractTextFromPDF = async (fileKey: string) => {
       throw new Error("Invalid file data");
     }
 
-    const pdf = await getDocument({ data: fileBuffer }).promise;
+    // Dynamically import pdfjs
+    const pdfjs = await import('pdfjs-dist');
+    const pdf = await pdfjs.getDocument({ data: fileBuffer }).promise;
+    
     let text = "";
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
