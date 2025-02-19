@@ -17,7 +17,7 @@ function googleSignIn(): Promise<void> {
   return new Promise((resolve) => {
     window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
     resolve();
-  })
+  });
 }
 
 export function UserButton() {
@@ -74,9 +74,7 @@ export function UserButton() {
         </>
       ) : (
         <>
-          <Button onClick={() => ("googleSignIn")}>
-            Sign in
-          </Button>
+          <Button onClick={googleSignIn}>Sign in</Button>
         </>
       )}
     </div>
