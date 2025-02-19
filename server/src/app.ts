@@ -10,6 +10,7 @@ import "./config/passport";
 import MongoStore from "connect-mongo";
 import session from "express-session";
 import authRoute from "./routes/auth";
+import contractsRoute from "./routes/contracts";
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use("/auth", authRoute);
+app.use("/contracts", contractsRoute);
 
 const PORT = 8080;
 app.listen(PORT, () => {
