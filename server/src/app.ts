@@ -6,10 +6,12 @@ import helmet from "helmet";
 import morgan from "morgan";
 import mongoose from "mongoose";
 
-
 const app = express();
 
-
+mongoose
+  .connect(process.env.MONGODB_URI!)
+  .then(() => console.log("Connected to MongoDB server"))
+  .catch((err) => console.error(err));
 
 app.use(
   cors({
