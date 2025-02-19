@@ -3,9 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export const useCurrentUser = () => {
   const {
-    isLoading,
-    isError,
-    data: user,
+    isLoading, isError, data: user,
   } = useQuery({
     queryKey: ["currentUser"],
     queryFn: async () => {
