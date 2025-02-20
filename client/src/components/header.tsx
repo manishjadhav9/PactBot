@@ -3,15 +3,14 @@
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Button } from "./ui/button";
 import { UserButton } from "./shared/user-button";
-
 
 const navItems: { name: string; href: string }[] = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Pricing", href: "/pricing" },
   { name: "Privacy Policy", href: "/privacy" },
 ];
-
 
 export function Header() {
   const pathname = usePathname();
@@ -21,7 +20,7 @@ export function Header() {
       <div className="container flex h-16 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href={"/"} className="mr-6 flex items-center space-x-2">
-            PactBot
+            LOGO
           </Link>
           <nav className="flex items-center space-x-7 text-sm font-medium">
             {navItems.map((item) => (

@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 
 interface IUploadModalProps {
   isOpen: boolean;
@@ -45,38 +44,28 @@ export function UploadModal({
       const formData = new FormData();
       formData.append("contract", file);
 
-      try {
-        console.log("Sending request to detect contract type");
-        
-        const response = await api.post<{ detectedType: string; message?: string }>(
-          `/api/contracts/detect-type`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-            timeout: 30000,
-          }
-        );
-
-        if (!response.data?.detectedType) {
-          throw new Error("No contract type detected in response");
+      const response = await api.post<{ detectedType: string }>(
+        `/contracts/detect-type`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
+      );
 
-        return response.data.detectedType;
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.details || 
-                           error.response?.data?.message ||
-                           error.message ||
-                           "Failed to detect contract type";
-        throw new Error(errorMessage);
-      }
+      return response.data.detectedType;
     },
-    onError: (error: Error) => {
-      console.error("Contract detection error:", error);
-      setError(error.message);
+
+    onSuccess: (data: string) => {
+      setDetectedType(data);
+      setStep("confirm");
+    },
+    onError: (error) => {
+      console.error(error);
+      setError("Failed to detect contract type");
       setStep("upload");
-    }
+    },
   });
 
   const { mutate: uploadFile, isPending: isProcessing } = useMutation({
@@ -91,26 +80,23 @@ export function UploadModal({
       formData.append("contract", file);
       formData.append("contractType", contractType);
 
-      try {
-        const response = await api.post(`/api/contracts/analyze`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        return response.data;
-      } catch (error) {
-        console.error("Upload error:", error);
-        throw error;
-      }
+      const response = await api.post(`/contracts/analyze`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      console.log(response.data);
+      return response.data;
     },
     onSuccess: (data) => {
       setAnalysisResults(data);
       setStep("done");
       onUploadComplete();
     },
-    onError: (error: Error) => {
-      console.error("Upload error:", error);
-      setError(error.message || "Failed to upload contract");
+    onError: (error) => {
+      console.error(error);
+      setError("Failed to upload contract");
       setStep("upload");
     },
   });
@@ -176,11 +162,11 @@ export function UploadModal({
                   <FileText className="mx-auto size-16 text-primary" />
                 </motion.div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Drag &apos;n&apos; drop files here, or click to select
+                  Drag &apos;n&apos; drop some files here, or click to select
                   files
                 </p>
                 <p className="bg-yellow-500/30 border border-yellow-500 border-dashed text-yellow-700 p-2 rounded mt-2">
-                  Note: Upload PDF files only
+                  Note: Only PDF files are accepted
                 </p>
               </div>
               {files.length > 0 && (
@@ -204,14 +190,8 @@ export function UploadModal({
               {files.length > 0 && !isProcessing && (
                 <Button className="mt-4 w-full mb-4" onClick={handleFileUpload}>
                   <Sparkles className="mr-2 size-4" />
-                  Use AI to analyze the contract
+                  Analyze Contract With AI
                 </Button>
-              )}
-              {error && (
-                <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                  <strong className="font-bold">Error: </strong>
-                  <span className="block sm:inline">{error}</span>
-                </div>
               )}
             </motion.div>
           </AnimatePresence>
@@ -339,12 +319,7 @@ export function UploadModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
-       
-          <DialogTitle>Upload Contract</DialogTitle>
-        
-        {renderContent()}
-      </DialogContent>
+      <DialogContent>{renderContent()}</DialogContent>
     </Dialog>
   );
 }
