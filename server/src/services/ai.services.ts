@@ -1,4 +1,5 @@
 import redis from "../config/redis";
+import { getDocument } from "pdfjs-dist";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const AI_MODEL = "gemini-pro";
@@ -12,13 +13,22 @@ export const extractTextFromPDF = async (fileKey: string) => {
       throw new Error("File not found");
     }
 
-    // Convert base64 string back to buffer
-    const fileBuffer = Buffer.from(fileData, 'base64');
+    let fileBuffer: Uint8Array;
+    if (Buffer.isBuffer(fileData)) {
+      fileBuffer = new Uint8Array(fileData);
+    } else if (typeof fileData === "object" && fileData !== null) {
+      // check if the the object has the expected structure
+      const bufferData = fileData as { type?: string; data?: number[] };
+      if (bufferData.type === "Buffer" && Array.isArray(bufferData.data)) {
+        fileBuffer = new Uint8Array(bufferData.data);
+      } else {
+        throw new Error("Invalid file data");
+      }
+    } else {
+      throw new Error("Invalid file data");
+    }
 
-    // Dynamically import pdfjs
-    const pdfjs = await import('pdfjs-dist');
-    const pdf = await pdfjs.getDocument({ data: fileBuffer }).promise;
-    
+    const pdf = await getDocument({ data: fileBuffer }).promise;
     let text = "";
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
@@ -27,9 +37,9 @@ export const extractTextFromPDF = async (fileKey: string) => {
     }
     return text;
   } catch (error) {
-    console.error("PDF extraction error:", error);
+    console.log(error);
     throw new Error(
-      `Failed to extract text from PDF. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to extract text from PDF. Error: ${JSON.stringify(error)}`
     );
   }
 };

@@ -1,27 +1,36 @@
 import express from "express";
 import passport from "passport";
-import { getCurrentUser, handleLogout } from "../controllers/auth.controller";
-import { handleErrors } from "../middleware/errors";
 
 const router = express.Router();
 
-router.get("/current-user", handleErrors(getCurrentUser));
-
 router.get(
   "/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  })
+  passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: "/login",
-    successRedirect: "/dashboard",
-  })
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => {
+    res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+  }
 );
 
-router.get("/logout", handleLogout);
+router.get("/current-user", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.json(req.user);
+  } else {
+    res.status(401).json({ error: "Unauthorized" });
+  }
+});
+
+router.get("/logout", (req, res, next) => {
+  req.logout((err) => {
+    if (err) {
+      return next(err);
+    }
+    res.status(200).json({ status: "ok" });
+  });
+});
 
 export default router;
