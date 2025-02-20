@@ -12,17 +12,8 @@ export const extractTextFromPDF = async (fileKey: string) => {
       throw new Error("File not found");
     }
 
-    let fileBuffer: Uint8Array;
-    if (typeof fileData === "object" && fileData !== null) {
-      const bufferData = fileData as { type?: string; data?: number[] };
-      if (bufferData.type === "Buffer" && Array.isArray(bufferData.data)) {
-        fileBuffer = new Uint8Array(bufferData.data);
-      } else {
-        throw new Error("Invalid file data");
-      }
-    } else {
-      throw new Error("Invalid file data");
-    }
+    // Convert base64 string back to buffer
+    const fileBuffer = Buffer.from(fileData, 'base64');
 
     // Dynamically import pdfjs
     const pdfjs = await import('pdfjs-dist');
@@ -36,9 +27,9 @@ export const extractTextFromPDF = async (fileKey: string) => {
     }
     return text;
   } catch (error) {
-    console.log(error);
+    console.error("PDF extraction error:", error);
     throw new Error(
-      `Failed to extract text from PDF. Error: ${JSON.stringify(error)}`
+      `Failed to extract text from PDF. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
 };

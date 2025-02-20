@@ -26,14 +26,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link 
+          rel="preload"
+          href="/_next/static/css/app/layout.css"
+          as="style"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ReactQueryProvider>
-        <Header />
-        {children}
-          </ReactQueryProvider>
-        
+          <Header />
+          {children}
+        </ReactQueryProvider>
       </body>
     </html>
   );

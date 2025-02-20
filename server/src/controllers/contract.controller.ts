@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import { IUser } from "../models/user.model";
 import redis from "../config/redis";
@@ -29,29 +29,73 @@ export const uploadMiddleware = upload;
 
 export const detectAndConfirmContractType = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
-  const user = req.user as IUser;
-
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
-
   try {
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ 
+        error: "Unauthorized",
+        details: "Please log in to continue"
+      });
+    }
+
+    const user = req.user as IUser;
+
+    // Validate file upload
+    if (!req.file) {
+      return res.status(400).json({ 
+        error: "No file uploaded",
+        details: "Please upload a PDF file"
+      });
+    }
+
+    // Validate file type
+    if (req.file.mimetype !== 'application/pdf') {
+      return res.status(415).json({
+        error: "Invalid file type",
+        details: "Only PDF files are allowed"
+      });
+    }
+
+    // Generate unique file key
     const fileKey = `file:${user._id}:${Date.now()}`;
-    await redis.set(fileKey, req.file.buffer);
+    
+    try {
+      // Store file in Redis
+      await redis.set(fileKey, req.file.buffer.toString('base64'));
+      await redis.expire(fileKey, 3600); // 1 hour expiry
 
-    await redis.expire(fileKey, 3600); // 1 hour
+      // Extract text from PDF
+      const pdfText = await extractTextFromPDF(fileKey);
+      
+      if (!pdfText || pdfText.trim().length === 0) {
+        throw new Error("No text could be extracted from the PDF");
+      }
 
-    const pdfText = await extractTextFromPDF(fileKey);
-    const detectedType = await detectContractType(pdfText);
+      // Detect contract type
+      const detectedType = await detectContractType(pdfText);
+      
+      if (!detectedType) {
+        throw new Error("Could not determine contract type");
+      }
 
-    await redis.del(fileKey);
+      // Clean up Redis
+      await redis.del(fileKey);
 
-    res.json({ detectedType });
+      return res.json({ 
+        detectedType,
+        message: "Contract type detected successfully" 
+      });
+    } catch (error) {
+      // Clean up Redis in case of error
+      await redis.del(fileKey);
+      throw error;
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to detect contract type" });
+    console.error("Contract detection error:", error);
+    next(error);
   }
 };
 

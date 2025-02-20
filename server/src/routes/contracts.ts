@@ -25,7 +25,16 @@ router.post(
   handleErrors(analyzeContract)
 );
 
-router.get("/user-contracts", isAuthenticated, handleErrors(getUserContracts));
-router.get("/contract/:id", isAuthenticated, handleErrors(getContractByID));
+router.get(
+  "/:id",
+  isAuthenticated,
+  handleErrors(getContractByID)
+);
+
+router.get(
+  "/",
+  isAuthenticated,
+  handleErrors(getUserContracts)
+);
 
 export default router;
